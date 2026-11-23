@@ -16,7 +16,15 @@ const assert = require('node:assert/strict');
     await test('table timeline board characters episodes',async()=>{for(const v of ['table','timeline','board','characters','episodes','project']){await page.locator('[data-nav="'+v+'"]').click();assert((await page.locator('#viewTitle').innerText()).length>0)}});
     await test('download JSON',async()=>{const [dl]=await Promise.all([page.waitForEvent('download'),page.locator('#exportBtn').click()]);assert(dl.suggestedFilename().endsWith('.json'))});
     await test('mobile viewport no horizontal document overflow',async()=>{await page.setViewportSize({width:390,height:844});await page.locator('[data-nav="dashboard"]').click();const metrics=await page.evaluate(()=>({body:document.body.scrollWidth,viewport:innerWidth}));assert(metrics.body<=metrics.viewport+2,JSON.stringify(metrics))});
-    await test('keyboard focus visible',async()=>{await page.locator('#addBtn').focus();assert(await page.locator('#addBtn').evaluate(e=>getComputedStyle(e).outlineStyle!=='none'))});
+    await test('keyboard focus visible',async()=>{
+      await page.reload();
+      for(let i=0;i<40;i++){
+        if(await page.evaluate(()=>document.activeElement?.id==='addBtn'))break;
+        await page.keyboard.press('Tab');
+      }
+      assert.equal(await page.evaluate(()=>document.activeElement?.id),'addBtn','Tab must reach add button');
+      assert(await page.locator('#addBtn').evaluate(e=>e.matches(':focus-visible') && getComputedStyle(e).outlineStyle!=='none'));
+    });
     assert.deepEqual(errors,[],'Browser JavaScript errors');
     console.log('BROWSER QA PASS');
   } finally {await browser.close()}
